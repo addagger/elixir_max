@@ -1,6 +1,7 @@
 
 
 
+
 # Elixir MAX (MAX Messenger API adapter)
 
 Lightweight:
@@ -151,11 +152,12 @@ iex(1)> MyBot.Router.webhook_path
 Keep in mind that endpoint is used just by your local Bandit instance.
 In my case the real world-looking web interface managed by Nginx, thus it is reasonable for me to configure Nginx to `proxy_pass` WebHook request to a local machine. And I couldn't think of anything better than to use almost the same path in the Nginx interface: `/nginx/max/SDYUKBMrflgsdo8FGffmm` to accept WebHook request.
 
-2. Next, let's tell MAX API about URL (or direct IP) for WebHook requests we've just chosen. In my case I use direct IP address instead of domain name:
+2. Next, let's tell MAX API about URL for WebHook requests we've just chosen. In my case I use direct IP address instead of domain name:
 ```elixir
 iex(1)> MyBot.Poller.stop
 :ok
-iex(1)> MyBot.post("setWebhook", %{ip_address: "X.X.X.X", url: "https://X.X.X.X/nginx/max/SDYUKBMrflgsdo8FGffmm", certificate: {:file, "/path/to/cert.pem"}})
+# Read https://dev.max.ru/docs-api/methods/POST/subscriptions
+iex(1)> MyBot.post("/subscriptions", %{url: "https://X.X.X.X/nginx/max/SDYUKBMrflgsdo8FGffmm"})
 ```
 3. Now configure Nginx how to `proxy_pass` to my local Bandit web server.
 /etc/nginx/nginx.conf:
@@ -245,8 +247,8 @@ Thus some of responds of the bot has to return `{:ok, bot_state, timeout}` inste
 * `:default` atom represents default timeout setting;
 * tuple `{timeout_now, timeout_next}` where the first element is to return now, and the second timeout for the next call. Each of them in turn can be `pos_integer()`, `:infinity` or  `:default`. 
 ```elixir
-def handle_update(%{"message" => %{"text" => "wait", "chat" => %{"id" => chat_id}}}, bot_state) do
-  post("sendMessage", %{text: "Im waiting 2 minutes", chat_id: chat_id})
+def handle_update(%{"update_type" => "message_created", "message" => %{"sender" => sender, "body" => %{"text" => "wait"}}}, bot_state) do
+  post("/messages", %{text: "Im waiting 2 minutes"}, user_id: sender["user_id"])
   {:ok, bot_state, 120}
 end
   ```
