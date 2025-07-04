@@ -341,7 +341,7 @@ iex(1)> MyBot.post("/uploads", type: "video")
   }
 }
 ```
-If respond body includes **"token"** key (when file type is `"video"` or `"audio"`), that token can will be used as a file payload further. Otherwise payload will be result of uploading itself.
+If respond body includes **"token"** key (when file type is `"video"` or `"audio"`), that token will be used as a file payload further. Otherwise payload will be result of uploading itself.
 
 2. Anyway at the **second step** you have to upload file itself. Hackney-style interface for file uploads is a good solution, so as a file (or binary) source you use:
 * `{:file, "/path/to/file"}`
@@ -389,7 +389,7 @@ MyBot.post("/messages", %{attachments: [%{type: "image", payload: %{
 We're going to avoid that stuff of uploading process. So we want just to send a message with a file, right?
 Your `MyBot` has ~~two~~  one helper function for that:
 ```elixir
-photo = MyBot.upload_attachment({:file, "/path/to/photo.jpg"}, "video")
+photo = MyBot.upload_attachment({:file, "/path/to/photo.jpg"}, "image")
 ```
 results in a ready to go attachment:
 ```
