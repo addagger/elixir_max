@@ -21,7 +21,7 @@ end
 ```
 
 ## Built-in example (MAX.ExampleBot)
-Сonfigure Telegram Bot token (config/config.exs):
+Сonfigure MAX Bot token (config/config.exs):
 ```elixir
 config :elixir_max, MAX.ExampleBot, token: "q6LHodR0cOPegA3ZXC-bfhuk3uiu7eEEawIOYD4EKRtT1yeQAZWn7oUU7KaYtOZOpo-dEp7Ax9zNT1ewG23W"
 ```
@@ -75,7 +75,7 @@ All functions are overrideable.
 
 ### Configure
 All settings are set in the configuration file (config/config.exs).
-For example, **necessary and sufficient** would be just Telegram Bot token:
+For example, **necessary and sufficient** would be just MAX Bot token:
 
 ```elixir
 config :elixir_max, MyBot, token: "q6LHodR0cOPegA3ZXC-bfhuk3uiu7eEEawIOYD4EKRtT1yeQAZWn7oUU7KaYtOZOpo-dEp7Ax9zNT1ewG23W"
@@ -151,7 +151,7 @@ iex(1)> MyBot.Router.webhook_path
 Keep in mind that endpoint is used just by your local Bandit instance.
 In my case the real world-looking web interface managed by Nginx, thus it is reasonable for me to configure Nginx to `proxy_pass` WebHook request to a local machine. And I couldn't think of anything better than to use almost the same path in the Nginx interface: `/nginx/max/SDYUKBMrflgsdo8FGffmm` to accept WebHook request.
 
-2. Next, let's tell Telegram API about URL (or direct IP) for WebHook requests we've just chosen. In my case I use direct IP address instead of domain name:
+2. Next, let's tell MAX API about URL (or direct IP) for WebHook requests we've just chosen. In my case I use direct IP address instead of domain name:
 ```elixir
 iex(1)> MyBot.Poller.stop
 :ok
@@ -167,7 +167,7 @@ http {
   server {
     listen 443 ssl; # HTTPS
     server_name  X.X.X.X; # ext IP address
-    ssl_certificate  /path/to/cert.pem; # Certificate we loaded to Telegram API
+    ssl_certificate  /path/to/cert.pem; # Certificate we loaded to MAX API
     ssl_certificate_key  /path/to/cert.key;
     location /nginx/max/SDYUKBMrflgsdo8FGffmm { # Nginx's endpoint
        proxy_pass http://mybot/max/SDYUKBMrflgsdo8FGffmm; # Bandit's endpoint
