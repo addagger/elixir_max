@@ -48,7 +48,8 @@ defmodule MAX.Uploader do
               end_bite = prev_chunk+byte_size(chunk)
               headers = [
                 {"Content-Type", "application/octet-stream"},
-                {"Content-Disposition", "attachment; filename=\"#{filename}\""},
+                {"Content-Disposition", "attachment; filename=#{URI.encode(filename)}"},
+                # {"Content-Disposition", "attachment; filename*=UTF-8''#{URI.encode(filename)}"},
                 {"Content-Range", "bytes #{start_bite}-#{end_bite}/#{size}"}
               ]
               with {:ok, %Tesla.Env{status: status, body: body}} <- Tesla.post(client(), url, chunk, headers: headers) do
