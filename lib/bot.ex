@@ -1,5 +1,4 @@
 defmodule MAX.Bot do
-
   defmacro __using__(_opts) do
     bot_module = __CALLER__.module
 
@@ -11,13 +10,16 @@ defmodule MAX.Bot do
 
     max_retries = config |> get_in([:max_retries]) || 5
 
-    finch_specs = (config |> get_in([:finch_specs]) || [
-      name: Module.concat(bot_module, Finch),
-      pools: %{
-        :default => [size: 500, count: 1],
-        base_url => [size: 500, count: 1, start_pool_metrics?: true]
-      }
-    ]) |> Macro.escape
+    finch_specs =
+      (config |> get_in([:finch_specs]) ||
+         [
+           name: Module.concat(bot_module, Finch),
+           pools: %{
+             :default => [size: 500, count: 1],
+             base_url => [size: 500, count: 1, start_pool_metrics?: true]
+           }
+         ])
+      |> Macro.escape()
 
     finch_name = config |> get_in([:finch_name]) || finch_specs[:name]
 
@@ -29,7 +31,9 @@ defmodule MAX.Bot do
 
     session_timeout = config |> get_in([:session_timeout]) || 60
 
-    poller_tmp_file = config |> get_in([:poller, :tmp_file]) || MAX.Helper.tmp_file(bot_module, token, "poller_marker")
+    poller_tmp_file =
+      config |> get_in([:poller, :tmp_file]) ||
+        MAX.Helper.tmp_file(bot_module, token, "poller_marker")
 
     poller_limit = config |> get_in([:poller, :limit]) || nil
 
@@ -39,7 +43,8 @@ defmodule MAX.Bot do
 
     poller_inspect_updates = config |> get_in([:poller, :inspect_updates]) || false
 
-    webhook_path = config |> get_in([:webhook, :path]) || MAX.Helper.webhook_path(bot_module, token)
+    webhook_path =
+      config |> get_in([:webhook, :path]) || MAX.Helper.webhook_path(bot_module, token)
 
     quote(location: :keep) do
       alias MAX.Types
@@ -48,18 +53,16 @@ defmodule MAX.Bot do
 
       use MAX.Registry
 
-      use MAX.Api, [
+      use MAX.Api,
         token: unquote(token),
         base_url: unquote(base_url),
         max_retries: unquote(max_retries),
         finch_name: unquote(finch_name)
-      ]
 
-      use MAX.Uploader, [
+      use MAX.Uploader,
         chunk_size: unquote(uploader_chunk_size),
         max_retries: unquote(uploader_max_retries),
         finch_name: unquote(finch_name)
-      ]
 
       use MAX.SessionSupervisor, max_sessions: unquote(max_sessions)
 
@@ -88,6 +91,7 @@ defmodule MAX.Bot do
       @impl true
       def init(_opts) do
         Logger.info("Starting #{inspect(__MODULE__)} (MAX Messenger Bot)")
+
         children = [
           unquote(bot_module).Registry,
           unquote(bot_module).SessionSupervisor,
@@ -95,7 +99,7 @@ defmodule MAX.Bot do
         ]
 
         children =
-          if unquote(finch_name) == unquote(finch_specs[:name]) do
+          if unquote(finch_name) == unquote(finch_specs)[:name] do
             children |> List.insert_at(1, {Finch, unquote(finch_specs)})
           else
             children
@@ -115,22 +119,25 @@ defmodule MAX.Bot do
       @spec get(String.t(), keyword()) :: {:ok, any()} | {:error, any()}
       def get(url, query), do: Api.fetch(:get, url, query)
 
-      @spec post(String.t(), map() | binary()) :: {:ok, any()} | {:error, any()}
+      @spec post(String.t(), map() | keyword() | binary()) :: {:ok, any()} | {:error, any()}
       def post(url, body), do: Api.fetch(:post, url, body)
 
-      @spec post(String.t(), map() | binary(), keyword()) :: {:ok, any()} | {:error, any()}
+      @spec post(String.t(), map() | keyword() | binary(), keyword()) ::
+              {:ok, any()} | {:error, any()}
       def post(url, body, query), do: Api.fetch(:post, url, body, query)
 
-      @spec put(String.t(), map() | binary()) :: {:ok, any()} | {:error, any()}
+      @spec put(String.t(), map() | keyword() | binary()) :: {:ok, any()} | {:error, any()}
       def put(url, body), do: Api.fetch(:put, url, body)
 
-      @spec post(String.t(), map() | binary(), keyword()) :: {:ok, any()} | {:error, any()}
+      @spec post(String.t(), map() | keyword() | binary(), keyword()) ::
+              {:ok, any()} | {:error, any()}
       def put(url, body, query), do: Api.fetch(:put, url, body, query)
 
-      @spec patch(String.t(), map() | binary()) :: {:ok, any()} | {:error, any()}
+      @spec patch(String.t(), map() | keyword() | binary()) :: {:ok, any()} | {:error, any()}
       def patch(url, body), do: Api.fetch(:patch, url, body)
 
-      @spec patch(String.t(), map() | binary(), keyword()) :: {:ok, any()} | {:error, any()}
+      @spec patch(String.t(), map() | keyword() | binary(), keyword()) ::
+              {:ok, any()} | {:error, any()}
       def patch(url, body, query), do: Api.fetch(:patch, url, body, query)
 
       @spec delete(String.t()) :: {:ok, any()} | {:error, any()}
@@ -150,11 +157,14 @@ defmodule MAX.Bot do
             else
               {:ok, upload_resp}
             end
+          else
+            error -> error
           end
         end
       end
 
-      @spec upload_attachment(Types.file_or_content(), String.t()) :: {:ok, any()} | {:error, any()}
+      @spec upload_attachment(Types.file_or_content(), String.t()) ::
+              %{type: String.t(), payload: {:ok, any()} | {:error, any()}} | {}
       def upload_attachment(file_or_content, type) do
         # type: "image" "video" "audio" "file"
         with {:ok, upload_resp} <- upload(file_or_content, type) do
@@ -169,8 +179,11 @@ defmodule MAX.Bot do
       @spec handle_update(Types.update(), Types.bot_state()) :: Types.callback_result()
       def handle_update(update, bot_state) do
         inspect(update) |> Logger.info(bot_module: __MODULE__)
-        text = "Define function <code>handle_update/2</code> in module <code>#{inspect(__MODULE__)}</code> and create the best chat bot ever for a great good!"
-        text |> IO.puts
+
+        text =
+          "Define function <code>handle_update/2</code> in module <code>#{inspect(__MODULE__)}</code> and create the best chat bot ever for a great good!"
+
+        text |> IO.puts()
         chat_id = MAX.Helper.extract_chat_id(update)
         post("/messages", %{text: "Hello world!\n" <> text, format: "html"}, chat_id: chat_id)
         {:ok, bot_state}
@@ -181,13 +194,20 @@ defmodule MAX.Bot do
         {:stop, bot_state}
       end
 
-      @spec handle_info(String.t(), Types.session_key(), Types.bot_state()) :: Types.callback_result()
+      @spec handle_info(String.t(), Types.session_key(), Types.bot_state()) ::
+              Types.callback_result()
       def handle_info(msg, _session_key, bot_state) do
         Logger.info(msg)
         {:ok, bot_state}
       end
 
-      @spec handle_error(struct(), Exception.Types.stacktrace(), Types.session_key(), Types.update(), Types.bot_state()) :: Types.callback_result()
+      @spec handle_error(
+              struct(),
+              Exception.stacktrace(),
+              Types.session_key(),
+              Types.update(),
+              Types.bot_state()
+            ) :: Types.callback_result()
       def handle_error(_error, _stacktrace, _session_key, _update, bot_state) do
         {:stop, bot_state}
       end
@@ -199,9 +219,11 @@ defmodule MAX.Bot do
         {:chat_id, chat_id}
       end
 
-      defoverridable handle_update: 2, handle_timeout: 2, handle_info: 3, handle_error: 5, session_key: 1
-
+      defoverridable handle_update: 2,
+                     handle_timeout: 2,
+                     handle_info: 3,
+                     handle_error: 5,
+                     session_key: 1
     end
   end
-
 end
